@@ -1,9 +1,11 @@
 
 # coding: utf-8
 
-# In[9]:
+# In[37]:
 
 
+# imports
+get_ipython().magic(u'matplotlib notebook')
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,8 +25,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import BaggingRegressor
 from sklearn.svm import SVC
 
+# import jtplot submodule from jupyterthemes
+from jupyterthemes import jtplot
+jtplot.style()
 
-# In[10]:
+
+# In[38]:
 
 
 # init picture params
@@ -42,7 +48,7 @@ type_dict = None
 print tr_raw.info()
 
 
-# In[11]:
+# In[39]:
 
 
 # init model
@@ -52,7 +58,7 @@ model_dict = {
     'logistic regr': LogisticRegression(),
     'decision tree': DecisionTreeClassifier(criterion='entropy', max_depth=3, min_samples_leaf=5),
     'svm rbf   ': SVC()
-    # 'random forest': RandomForestClassifier(n_estimators=1000,random_state=33)
+    #'random forest': RandomForestClassifier(n_estimators=1000,random_state=33)
 }
 
 # bagging
@@ -62,79 +68,57 @@ model_dict = {
 tr_raw.describe()
 
 
-# In[12]:
+# In[40]:
 
 
-tr_raw
+tr_raw.head()
 
-# simple clean
-[tr_clean, te_clean] = map(lambda x:x.fillna(0), [tr_raw, te_raw])
-[tr_clean.Sex, te_clean.Sex] = map(lambda x:pd.get_dummies(x['Sex'], prefix='Sex'), [tr_clean, te_clean])
-[tr_plt, te_plt] = [tr_clean, te_clean]
 
-fig=plt.figure('Taitanic', figsize=(12, 6))
-tr_plt_y_female = tr_plt[tr_plt.Sex==1][['Survived']]
-tr_plt_female = tr_plt[tr_plt.Sex==1]
-tr_plt_y_male = tr_plt[tr_plt.Sex==0][['Survived']]
-tr_plt_male = tr_plt[tr_plt.Sex==0]
-
-# real data, female, pclass, age
-ax = fig.add_subplot(121, projection='3d')
-ax.set_title('female')
-ax.scatter(tr_plt_female['Fare'], tr_plt_female['Age'], tr_plt_female['Pclass'], c=tr_plt_y_female.values.ravel(), edgecolors='k', cmap=plt.cm.Paired)
-ax.set_zticklabels(['1st', '', '2nd', '', '3rd'])
-ax.set_ylabel('age(years)')
-
-# cross validate predict data, female, pclass, age
-bx = fig.add_subplot(122, projection='3d')
-bx.set_title('male')
-bx.scatter(tr_plt_male['Fare'], tr_plt_male['Age'], tr_plt_male['Pclass'], c=tr_plt_y_male.values.ravel(), edgecolors='k', cmap=plt.cm.Paired)
-bx.set_zticklabels(['1st', '', '2nd', '', '3rd'])
-bx.set_ylabel('age(years)')
-plt.show()
-
-# feature chose
-[tr_X, te_X] = map(lambda x:x[['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']], [tr_clean, te_clean])
-
-tr_plt.head()
-# In[13]:
+# In[41]:
 
 
 # feature engineering
 # https://triangleinequality.wordpress.com/2013/09/08/basic-feature-engineering-with-the-titanic-data/
 if not type_dict:
     [tr_clean, te_clean, type_dict] = cleantitanic2.clean(tr_raw, te_raw)
+    
+tr_clean
 
+
+# In[47]:
+
+
+# label encoder
 [tr_clean, te_clean] = map(lambda x:x.apply(LabelEncoder().fit_transform), [tr_clean, te_clean])
 [tr_plt, te_plt] = map(lambda x:x.apply(LabelEncoder().fit_transform), [tr_raw, te_raw])
 
-fig=plt.figure('Taitanic', figsize=(12, 6))
-tr_plt_y_female = tr_plt[tr_plt.Sex==1][['Survived']]
+fig=plt.figure('Taitanic', figsize=(8, 4))
 tr_plt_female = tr_plt[tr_plt.Sex==1]
-tr_plt_y_male = tr_plt[tr_plt.Sex==0][['Survived']]
+tr_plt_y_female = tr_plt_female[['Survived']]
 tr_plt_male = tr_plt[tr_plt.Sex==0]
+tr_plt_y_male = tr_plt_male[['Survived']]
 
 # real data, female, pclass, age
 ax = fig.add_subplot(121, projection='3d')
 ax.set_title('female')
 ax.scatter(tr_plt_female['Family_Size'], tr_plt_female['Age'], tr_plt_female['Pclass'], c=tr_plt_y_female.values.ravel(), edgecolors='k', cmap=plt.cm.Paired)
-ax.set_zticklabels(['1st', '', '2nd', '', '3rd'])
+ax.set_zticklabels(['1st', '2nd', '3rd'])
+ax.set_xlabel('family size')
 ax.set_ylabel('age(years)')
 
-# cross validate predict data, female, pclass, age
+# real data, male, pclass, age
 bx = fig.add_subplot(122, projection='3d')
 bx.set_title('male')
 bx.scatter(tr_plt_male['Family_Size'], tr_plt_male['Age'], tr_plt_male['Pclass'], c=tr_plt_y_male.values.ravel(), edgecolors='k', cmap=plt.cm.Paired)
-bx.set_zticklabels(['1st', '', '2nd', '', '3rd'])
+bx.set_zticklabels(['1st', '2nd', '3rd'])
+bx.set_xlabel('family size')
 bx.set_ylabel('age(years)')
 
 # feature chose
-[tr_X, te_X] = map(lambda x:x[['Pclass', 'Sex', 'Age', 'Family_Size']], [tr_clean, te_clean])
-
-tr_plt.head()
+[tr_X, te_X] = map(lambda x:x[['Pclass', 'Sex', 'Age', 'Family_Size', 'Title']], [tr_clean, te_clean])
 
 
-# In[14]:
+# In[43]:
 
 
 # train
@@ -143,11 +127,11 @@ for k, v in model_dict.items():
     v.fit(tr_X, tr_y.values.ravel())
 
 
-# In[15]:
+# In[44]:
 
 
 # metrics
-fig=plt.figure('Roc', figsize=(4, 4))
+fig=plt.figure('Roc', figsize=(3, 3))
 cx = fig.add_subplot(111)
 cx.set_title('roc')
 
@@ -168,10 +152,10 @@ for k, v in model_dict.items():
 
 # bingo
 print "BINGO:", bingo[0], "ACU:", bingo[2]
-#pd.DataFrame([bingo[1].roef_], columns=list(tr_X))
+#pd.DataFrame([bingo[1].coef_], columns=list(tr_X))
 
 
-# In[16]:
+# In[45]:
 
 
 # predict
